@@ -1,0 +1,167 @@
+---
+title: "COVID-19 case report graphing exercise"
+author: "Peter van Heusden <pvh@sanbi.ac.za>"
+date: "08 March 2020"
+output: html_document
+---
+```{r reticulate, include=FALSE}
+library(reticulate)
+use_condaenv(condaenv = 'altair', conda = '/home/pvh/anaconda3/bin/conda')
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{python pyinit, include=FALSE}
+import pandas as pd
+import io
+import requests
+import altair as alt
+
+url = "http://j.mp/covid19casescsv"
+```
+
+## COVID-19 cases graphed, in R and Python
+
+I do my day to day programming in Python, not R, so as an exercise in strengthening my R skills I decided to do some graphing of COVID-19 case numbers. Google helped me (of course) as did the [R for Data Science](https://r4ds.had.co.nz/) book and a plethora of other pages. The data that I used was from Johns Hopkins University CSSE Github [repository](https://github.com/CSSEGISandData), I just made a [tinyurl](http://j.mp/covid19casescsv) to make it simpler to type in the code.
+
+First, the R libraries used:
+
+```{r libraries}
+library(tidyverse)
+library(lubridate)
+```
+Notice that this R makes comments about functions that are masked by some of those imported from the `tidyverse` and `lubridate` packages. This is because R tends to use a *flat* namespace. Here is the R for getting the data:
+
+```{r prepare_data}
+data_source <- 'http://j.mp/covid19casescsv'
+covid19 <- read_csv(url(data_source)) %>% 
+  rename(Country = "Country/Region") %>% 
+  select(-c("Province/State", "Lat", "Long")) %>% 
+  pivot_longer(-Country, names_to = "textdate", values_to = "Cases") %>%
+  mutate(Date = mdy(textdate)) %>% 
+  arrange(Date) %>% 
+  select(-textdate)
+```
+
+It extensively uses "tidyverse" modules and the associated concept of pipes. I.e. the data is retrieved and then read in as a [tibble](https://r4ds.had.co.nz/tibbles.html) then columns I don't need are dropped, the data is converted from [wide to long form](https://www.theanalysisfactor.com/wide-and-long-data/), date values are converted from text to date types and the tibble is sorted by date.
+
+Here is the equivalent Python. First the libraries used:
+
+```{python pylibraries}
+import pandas as pd
+import io
+import requests
+import altair as alt
+```
+
+and then the associated Python code for getting the data
+
+```{python pyprepare_data}
+# fetch data using requests
+url = "http://j.mp/covid19casescsv"
+content_string = requests.get(url).content
+raw_data = pd.read_csv(io.StringIO(content_string.decode('utf-8')))
+
+value_columns = raw_data.columns[4:]
+covid19 = raw_data.drop(
+    ['Province/State', 'Lat', 'Long'], axis=1).melt(
+        id_vars=['Country/Region'], value_vars=value_columns, var_name='textdate', value_name='Cases')
+covid19['Date'] = covid19['textdate'].apply(pd.to_datetime)
+covid19 = covid19.sort_values(by=['Date']).drop(['textdate'], axis=1)
+covid19.columns = ['Country', 'Cases', 'Date']
+```
+
+The Python code uses [requests](https://requests.readthedocs.io/en/master/) to get data and then [Pandas](https://pandas.pydata.org/) to manipulate it. It does not have special purpose syntax like the `%>%` pipe or `%in%` (seen below) but otherwise it has similar features, e.g. `drop` is like `select` and `melt` is like `pivot_long`. It also spreads across a few statements, as opposed to the R single long chain of operations. Wesley Goi has a great post on the equivalences between [Python and tidyverse R](https://towardsdatascience.com/tidying-up-pandas-4572bfa38776).
+
+And now for the graphs. First in R with ggplot:
+
+```{r ggplot}
+covid19 %>%
+  filter(Country %in% c("Iran",
+                        "Italy", 
+                        "Switzerland", 
+                        "France",
+                        "Spain",
+                        "Germany",
+                        "UK")) %>%
+  ggplot(aes(x=Date, y=Cases, col=Country)) + geom_point() + theme(axis.text.x = element_text(angle = 90))
+```
+
+which uses an additive model for formatting (e.g. `+ geom_point()`). The
+equivalent in Python is done using [Altair](https://altair-viz.github.io/index.html):
+
+```{python altair}
+chart = alt.Chart(covid19[covid19.Country.isin(['Iran',
+                                        'Italy',
+                                       'France',
+                                       'Spain',
+                                       'Germany',
+                                       'UK'])],
+                 width=600
+                 ).mark_point().encode(x=alt.X('monthdate(Date)', 
+                                                  axis=alt.Axis(labelAngle=90)), 
+                                         y='Cases', color='Country').to_json()
+```
+
+```{r pychart}
+library(vegawidget)
+
+as_vegaspec(py$chart)
+```
+
+Again the Python style of functions is used, and it makes neat formatting quite difficult to achieve. Formatting is expressed as chained functions or options
+within those functions, which has the advantage of consistency (there is no need to learn new syntax).
+
+To display in RMarkdown I used the tips from [https://github.com/altair-viz/altair/issues/1940], i.e. output a chart as JSON (using `.to_json()` on the Altair Chart object) and the use the R `as_vegaspec` function from the [vegawidget](https://rdrr.io/cran/vegawidget/) library to display the chart.
+
+### Aggregating by country
+
+While Italy and UK are being treated "as a whole" in this data, some countries (like USA) are being dealt with state by state. This means data needs to be aggregated. This Python does that:
+
+```{python pygrouped}
+value_columns = raw_data.columns[4:]
+covid19 = raw_data.drop(
+    ['Lat', 'Long'], axis=1).melt(
+        id_vars=['Country/Region', 'Province/State'], value_vars=value_columns, var_name='textdate', value_name='Cases')
+covid19['Date'] = covid19['textdate'].apply(pd.to_datetime)
+covid19 = covid19.sort_values(by=['Date']).drop(['textdate'], axis=1)
+covid19.columns = ['Country', 'Province/State', 'Cases', 'Date']
+grouped = covid19.groupby(['Date', 'Country'], as_index=False).sum()
+```
+
+and then it can be plotted:
+
+```{python altair_grouped}
+chart2 = alt.Chart(grouped[grouped.Country.isin(['US', 'Italy'])]).mark_point().encode(x=alt.X('monthdate(Date)', 
+                                                  axis=alt.Axis(labelAngle=90)), 
+                                         y='Cases', color='Country')
+chart2_json = chart2.to_json()
+chart2
+```
+
+```{r pychart2}
+as_vegaspec(py$chart2_json)
+```
+
+The equivalent in R (including plotting) is this:
+
+```{r rgrouped}
+data_source <- 'http://j.mp/covid19casescsv'
+covid19 <- read_csv(url(data_source)) %>% 
+  rename(Country = "Country/Region") %>%
+  rename(State = "Province/State") %>%
+  select(-c("Lat", "Long")) %>% 
+  pivot_longer(-c(Country, State), names_to = "textdate", values_to = "Cases") %>%
+  mutate(Date = mdy(textdate)) %>% 
+  arrange(Date) %>% 
+  select(-textdate) %>%
+  group_by(Country, Date) %>%
+  summarise(Cases = sum(Cases))
+
+covid19 %>%
+  filter(Country %in% c("US", "Italy")) %>%
+  ggplot(aes(x=Date, y=Cases, col=Country)) + geom_point() + theme(axis.text.x = element_text(angle = 90))
+```
