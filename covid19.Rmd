@@ -20,12 +20,12 @@ import io
 import requests
 import altair as alt
 
-url = "http://j.mp/covid19casescsv"
+url = "http://j.mp/covid19casescsvnew"
 ```
 
 ## COVID-19 cases graphed, in R and Python
 
-I do my day to day programming in Python, not R, so as an exercise in strengthening my R skills I decided to do some graphing of COVID-19 case numbers. Google helped me (of course) as did the [R for Data Science](https://r4ds.had.co.nz/) book and a plethora of other pages. The data that I used was from Johns Hopkins University CSSE Github [repository](https://github.com/CSSEGISandData), I just made a [tinyurl](http://j.mp/covid19casescsv) to make it simpler to type in the code.
+I do my day to day programming in Python, not R, so as an exercise in strengthening my R skills I decided to do some graphing of COVID-19 case numbers. Google helped me (of course) as did the [R for Data Science](https://r4ds.had.co.nz/) book and a plethora of other pages. The data that I used was from Johns Hopkins University CSSE Github [repository](https://github.com/CSSEGISandData), I just made a [tinyurl](http://j.mp/covid19casescsvnew) to make it simpler to type in the code.
 
 First, the R libraries used:
 
@@ -36,7 +36,7 @@ library(lubridate)
 Notice that this R makes comments about functions that are masked by some of those imported from the `tidyverse` and `lubridate` packages. This is because R tends to use a *flat* namespace. Here is the R for getting the data:
 
 ```{r prepare_data}
-data_source <- 'http://j.mp/covid19casescsv'
+data_source <- 'http://j.mp/covid19casescsvnew'
 covid19 <- read_csv(url(data_source)) %>% 
   rename(Country = "Country/Region") %>% 
   select(-c("Province/State", "Lat", "Long")) %>% 
@@ -61,7 +61,7 @@ and then the associated Python code for getting the data
 
 ```{python pyprepare_data}
 # fetch data using requests
-url = "http://j.mp/covid19casescsv"
+url = "http://j.mp/covid19casescsvnew"
 content_string = requests.get(url).content
 raw_data = pd.read_csv(io.StringIO(content_string.decode('utf-8')))
 
@@ -149,7 +149,7 @@ as_vegaspec(py$chart2_json)
 The equivalent in R (including plotting) is this:
 
 ```{r rgrouped}
-data_source <- 'http://j.mp/covid19casescsv'
+data_source <- 'http://j.mp/covid19casescsvnew'
 covid19 <- read_csv(url(data_source)) %>% 
   rename(Country = "Country/Region") %>%
   rename(State = "Province/State") %>%

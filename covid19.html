@@ -1593,7 +1593,7 @@ summary {
 
 <div id="covid-19-cases-graphed-in-r-and-python" class="section level2">
 <h2>COVID-19 cases graphed, in R and Python</h2>
-<p>I do my day to day programming in Python, not R, so as an exercise in strengthening my R skills I decided to do some graphing of COVID-19 case numbers. Google helped me (of course) as did the <a href="https://r4ds.had.co.nz/">R for Data Science</a> book and a plethora of other pages. The data that I used was from Johns Hopkins University CSSE Github <a href="https://github.com/CSSEGISandData">repository</a>, I just made a <a href="http://j.mp/covid19casescsv">tinyurl</a> to make it simpler to type in the code.</p>
+<p>I do my day to day programming in Python, not R, so as an exercise in strengthening my R skills I decided to do some graphing of COVID-19 case numbers. Google helped me (of course) as did the <a href="https://r4ds.had.co.nz/">R for Data Science</a> book and a plethora of other pages. The data that I used was from Johns Hopkins University CSSE Github <a href="https://github.com/CSSEGISandData">repository</a>, I just made a <a href="http://j.mp/covid19casescsvnew">tinyurl</a> to make it simpler to type in the code.</p>
 <p>First, the R libraries used:</p>
 <pre class="r"><code>library(tidyverse)</code></pre>
 <pre><code>## ── Attaching packages ────────────────────────────────────────────── tidyverse 1.3.0 ──</code></pre>
@@ -1613,7 +1613,7 @@ summary {
 ## 
 ##     date</code></pre>
 <p>Notice that this R makes comments about functions that are masked by some of those imported from the <code>tidyverse</code> and <code>lubridate</code> packages. This is because R tends to use a <em>flat</em> namespace. Here is the R for getting the data:</p>
-<pre class="r"><code>data_source &lt;- &#39;http://j.mp/covid19casescsv&#39;
+<pre class="r"><code>data_source &lt;- &#39;http://j.mp/covid19casescsvnew&#39;
 covid19 &lt;- read_csv(url(data_source)) %&gt;% 
   rename(Country = &quot;Country/Region&quot;) %&gt;% 
   select(-c(&quot;Province/State&quot;, &quot;Lat&quot;, &quot;Long&quot;)) %&gt;% 
@@ -1636,7 +1636,7 @@ import requests
 import altair as alt</code></pre>
 <p>and then the associated Python code for getting the data</p>
 <pre class="python"><code># fetch data using requests
-url = &quot;http://j.mp/covid19casescsv&quot;
+url = &quot;http://j.mp/covid19casescsvnew&quot;
 content_string = requests.get(url).content
 raw_data = pd.read_csv(io.StringIO(content_string.decode(&#39;utf-8&#39;)))
 
@@ -3620,7 +3620,7 @@ chart2</code></pre>
   }
 },"evals":[],"jsHooks":[]}</script>
 <p>The equivalent in R (including plotting) is this:</p>
-<pre class="r"><code>data_source &lt;- &#39;http://j.mp/covid19casescsv&#39;
+<pre class="r"><code>data_source &lt;- &#39;http://j.mp/covid19casescsvnew&#39;
 covid19 &lt;- read_csv(url(data_source)) %&gt;% 
   rename(Country = &quot;Country/Region&quot;) %&gt;%
   rename(State = &quot;Province/State&quot;) %&gt;%
